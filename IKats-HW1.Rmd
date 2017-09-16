@@ -1,0 +1,350 @@
+---
+title: "DATA 605 Week 1 Homework"
+author: "Ilya Kats"
+date: "September 2, 2017"
+params:
+  username: "root"
+  password: ""
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Problem Set 1
+
+My approach for problem set 1 was to do all computations manually, but then I have double-checked them with R code. *Side note:* It took me embarrassingly long time to realize that I need to make sure that the aspect ratios of x axis and y axis in the plot should match if I want to double-check the angle visually.
+
+### Part (1)
+
+If
+
+$u=[0.5, 0.5]$
+
+$v=[3, -4]$
+
+Then dot product is
+
+$$
+\begin{split}
+  u \cdot v &= [0.5, 0.5] \cdot [3, -4] \\
+    &= 0.5 * 3 + 0.5 * (-4) \\
+    &= 1.5 - 2 \\
+    &= -0.5 
+\end{split}
+$$
+
+Check with R...
+
+```{r}
+u <- c(0.5, 0.5)
+v <- c(3, -4)
+dot_uv <- drop(u %*% v)
+dot_uv
+```
+
+### Part (2)
+
+Length of vector $u$
+
+$$
+\begin{split}
+  \left\| u \right\| &= \sqrt{0.5^2 + 0.5^2} \\
+  &= \sqrt{0.25 + 0.25} \\
+  &= \sqrt{0.5} \approx{0.7071}
+\end{split}
+$$
+
+Length of vector $v$
+
+$$
+\begin{split}
+  \left\| v \right\| &= \sqrt{3^2 + {(-4)}^2} \\
+  &= \sqrt{9 + 16} \\
+  &= \sqrt{25} \\
+  &= 5
+\end{split}
+$$
+
+Check with R...
+
+```{r}
+len_u <- sqrt(u[1]^2 + u[2]^2)
+len_v <- sqrt(v[1]^2 + v[2]^2)
+len_u
+len_v
+```
+
+### Part (3)
+
+$$
+\begin{split}
+  3u - 2v &= 3 [0.5, 0.5] - 2 [3, -4] \\
+  &= [3*0.5, 3*0.5] - [2*3, 2*(-4)] \\
+  &= [1.5, 1.5] - [6, -8] \\
+  &= [1.5 - 6, 1.5 - (-8)] \\
+  &= [-4.5, 9.5]
+\end{split}
+$$
+
+Check with R...
+
+```{r}
+3*u - 2*v
+```
+
+### Part (4)
+
+Let $\theta$ be an angle between vectors $u$ and $v$, then 
+
+$$
+\begin{split}
+  \cos(\theta) &= \frac{u \cdot v}{\left\| u \right\|\left\| v \right\|}\\
+  &= \frac{-0.5}{0.7071 * 5} \approx -0.1414
+\end{split}
+$$
+
+```{r}
+cos_theta <- dot_uv / (len_u * len_v)
+cos_theta
+
+theta <- acos(cos_theta) * 180/pi
+theta
+```
+
+Based on R code above the angle is $\theta = cos^{-1}(-0.1414) \approx 98.13^{\circ}$.
+
+Confirm results by plotting two vectors...
+
+```{r}
+plot(NA, xlim=c(0,3), ylim=c(-4,0.5), xlab="X", ylab="Y", asp=1)
+arrows(0,0,0.5,0.5)
+arrows(0,0,3,-4)
+grid()
+```
+
+## Problem Set 2
+
+### Generate Row-Equivalent Matrix in Echelon Form
+
+The following code is based on the **Gauss-Jordan elimination** algorithm presented in Subsection RREF of the  *A First Course in Linear Algebra* book by Robert A. Beezer. The `echelon` function works on any size coefficient matrix.
+
+```{r}
+# Generate row-equivalent matrix in echelon form
+# A is a coefficient matrix
+# b is vector of constants
+echelon <- function(A, b) {
+  A1 <- cbind(A,matrix(b))
+
+  m <- dim(A)[1]
+  n <- dim(A)[2]
+
+  r <- 0
+  for(j in 1:n) {
+    i <- r+1
+    if(i <= m) {
+      A1ij <- A1[i,j]
+    }
+    while (i <= m & A1ij==0) {
+      i <- i+1
+      if(i <= m) {
+        A1ij <- A1[i,j]
+      }
+    }
+    if(i < m+1) {
+      r <- r+1
+      
+      # Swapping rows i and r (row operation 1)
+      temprow <- A1[i, ]
+      A1[i, ] <- A1[r, ]
+      A1[r, ] <- temprow
+      
+      # Scale A[r,j] to 1 (row operation 2)
+      multiplier <- A1[r,j]
+      for(t in 1:(n+1)) {
+        A1[r,t] <- A1[r,t] / multiplier 
+      }
+      
+      # Zero out all other values in the column (row operation 3)
+      for(k in 1:m) {
+        if(k!=r) {
+          multiplier <- A1[k,j]
+          for(t in 1:(n+1)) {
+            A1[k,t] <- A1[k,t] - A1[r,t] * multiplier
+          }
+        }
+      }
+    }
+  }
+  return(A1)
+}
+```
+
+### Examples
+
+Even though the code above works on any size system of equations, examples and code below only test systems of 3 variables and 3 constraints. The code in all examples is the same. To test other examples, only adjustments to `A` and `b` are needed.
+
+#### EXAMPLE 1
+
+```{r}
+# Coefficient matrix
+A <- matrix(c(1,2,-1,1,-1,-2,3,5,4), nrow = 3)
+A
+
+# Vector of constants
+b <- c(1,2,6)
+b
+
+# Row-equivalent matrix in echelon form
+Ae <- echelon(A, b)
+Ae
+
+# Find and output solution(s)
+onesolution <- TRUE
+for(i in 1:dim(A)[1]) {
+  if (all(Ae[i, 1:dim(A)[2]]==0)) {
+    if (Ae[i,dim(Ae)[2]]==0) {
+      msg <- "There are infinitely many solutions."
+    } else {
+      msg <- "There are no solutions."
+    }
+    onesolution <- FALSE
+  }
+}
+```
+
+**SOLUTION:**
+
+```{r}
+if (onesolution) {
+  msg <- "There is only one solution."
+  Ae[,dim(Ae)[2]]
+}
+
+print(msg)
+```
+
+Because of rounding when converting the systen to echelon form, the solution does not match exactly the solution specified in the problem ([-1.55, -0.32, 0.95]).
+
+#### EXAMPLE 2
+
+```{r}
+# Coefficient matrix
+A <- matrix(c(3,5,2,4,-2,-2,-1,1,1), nrow = 3)
+A
+
+# Vector of constants
+b <- c(8,4,1)
+b
+
+# Row-equivalent matrix in echelon form
+Ae <- echelon(A, b)
+Ae
+
+# Find and output solution(s)
+onesolution <- TRUE
+for(i in 1:dim(A)[1]) {
+  if (all(Ae[i, 1:dim(A)[2]]==0)) {
+    if (Ae[i,dim(Ae)[2]]==0) {
+      msg <- "There are infinitely many solutions."
+    } else {
+      msg <- "There are no solutions."
+    }
+    onesolution <- FALSE
+  }
+}
+```
+
+**SOLUTION:**
+
+```{r}
+if (onesolution) {
+  msg <- "There is only one solution."
+  Ae[,dim(Ae)[2]]
+}
+
+print(msg)
+```
+
+#### EXAMPLE 3
+
+```{r}
+# Coefficient matrix
+A <- matrix(c(5,4,-1,-2,-4,1,1,-8,2), nrow = 3)
+A
+
+# Vector of constants
+b <- c(3,2,-3)
+b
+
+# Row-equivalent matrix in echelon form
+Ae <- echelon(A, b)
+Ae
+
+# Find and output solution(s)
+onesolution <- TRUE
+for(i in 1:dim(A)[1]) {
+  if (all(Ae[i, 1:dim(A)[2]]==0)) {
+    if (Ae[i,dim(Ae)[2]]==0) {
+      msg <- "There are infinitely many solutions."
+    } else {
+      msg <- "There are no solutions."
+    }
+    onesolution <- FALSE
+  }
+}
+```
+
+**SOLUTION:**
+
+```{r}
+if (onesolution) {
+  msg <- "There is only one solution."
+  Ae[,dim(Ae)[2]]
+}
+
+print(msg)
+```
+
+#### EXAMPLE 4
+
+```{r}
+# Coefficient matrix
+A <- matrix(c(1,-3,4,-2,6,-8,1,-3,4), nrow = 3)
+A
+
+# Vector of constants
+b <- c(3,-9,12)
+b
+
+# Row-equivalent matrix in echelon form
+Ae <- echelon(A, b)
+Ae
+
+# Find and output solution(s)
+onesolution <- TRUE
+for(i in 1:dim(A)[1]) {
+  if (all(Ae[i, 1:dim(A)[2]]==0)) {
+    if (Ae[i,dim(Ae)[2]]==0) {
+      msg <- "There are infinitely many solutions."
+    } else {
+      msg <- "There are no solutions."
+    }
+    onesolution <- FALSE
+  }
+}
+```
+
+**SOLUTION:**
+
+```{r}
+if (onesolution) {
+  msg <- "There is only one solution."
+  Ae[,dim(Ae)[2]]
+}
+
+print(msg)
+```

@@ -1,0 +1,134 @@
+---
+title: "DATA 605 Week 2 Homework"
+author: "Ilya Kats"
+date: "September 10, 2017"
+output:
+  pdf_document: default
+  html_document: default
+params:
+  password: ''
+  username: root
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Problem Set 1
+
+### Part (1)
+
+Show that $A^TA \ne AA^T$ in general. (Proof and demonstration.)
+
+**Solution:** Consider matrix $A_{m\times n}$ where $m \ne n$. Then $A^T$ will be the size of $n \times m$. Then $AA^T$ will be a square matrix of size $m\times m$ and $A^TA$ will be a square matrix of size $n \times n$. Since $m \ne n$, these two matrices will not be equal. This will hold for any non-square matrix, but may be true for some square matrices.
+
+*Demonstration:*
+
+```{r}
+A <- matrix(c(1,2,3,4,5,6), nrow=2, byrow=TRUE)
+At <- t(A)
+
+# Consider matrix A
+A
+# and its transpose
+At
+# Multiplying A by its transpose we get 2x2
+A %*% At
+# Multiplying transposed A by A we get 3x3
+At %*% A
+```
+
+### Part (2)
+
+For a special type of square matrix A, we get $A^TA = AA^T$. Under what conditions could this be true? (Hint: The Identity matrix I is an example of such a matrix).
+
+**Solution:** This condition is true if $A = A^T$. Transposing a matrix switches columns into rows or simply flips it along the diagonal. If a matrix is symmetrical along the diagonal, $A^T = A$ and the condition holds.
+
+*Demonstration:*
+
+```{r}
+A <- matrix(c(1,2,0,2,1,0,0,0,5), nrow=3, byrow=TRUE)
+
+# Consider matrix A
+A
+
+# its transpose is the same matrix
+t(A)
+A == t(A)
+
+# so
+(A %*% t(A)) == (t(A) %*% A)
+```
+
+## Problem Set 2
+
+Write an R function to factorize a square matrix A into LU.
+
+### Solution
+
+The code is based on the algorithm presented by *James Sousa* for *Mathispowerf4u* (https://www.youtube.com/watch?v=UlWcofkUDDU).
+
+```{r}
+factorizeLU <- function(A) {
+  # Check that A is square
+  if (dim(A)[1]!=dim(A)[2]) {
+    return(NA)
+  }
+  
+  U <- A
+  n <- dim(A)[1]
+  L <- diag(n)
+  
+  # If dimension is 1, then U=A and L=[1]
+  if (n==1) {
+    return(list(L,U))
+  }
+  
+  # Loop through the lower triangle (by rows and columns)
+  # Determine multiplier for each position and add it to L
+  for(i in 2:n) {
+    for(j in 1:(i-1)) {
+      multiplier <- -U[i,j] / U[j,j]
+      U[i, ] <- multiplier * U[j, ] + U[i, ]
+      L[i,j] <- -multiplier
+    }
+  }
+  return(list(L,U))
+}
+```
+
+### Demonstration
+
+#### Example 1
+
+```{r}
+A <- matrix(c(1,4,-3,-2,8,5,3,4,7), nrow=3, byrow=TRUE)
+LU <- factorizeLU(A)
+L<-LU[[1]]  
+U<-LU[[2]]
+
+A
+L
+U
+A == L %*% U
+```
+
+#### Example 2
+
+```{r}
+A <- matrix(c(2,1,6,8), nrow=2, byrow=TRUE)
+LU <- factorizeLU(A)
+L<-LU[[1]]  
+U<-LU[[2]]
+
+A
+L
+U
+A == L %*% U
+```
+
+### Notes
+
+The function fails if it encounters any zeros on the diagonal. This will require pivoting and per stated problem, we do not need to account for permutating rows of A. Researching the LU decomposition, I've noticed that some approaches store L and U in the same matrix and in fact overwrite A with combined LU as the algorithm moves forward. There may be some interesting posibilities here. 
+
+
