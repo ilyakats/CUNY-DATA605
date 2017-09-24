@@ -1,0 +1,35 @@
+---
+title: "DATA 605 Week 4 Discussion"
+author: "Ilya Kats"
+date: "September 20, 2017"
+params:
+  username: "root"
+  password: ""
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, error = TRUE)
+```
+
+## Chapter LT Section LT Exercise C42
+
+Define $T: M_{22} \rightarrow \mathbb{C}^1$ by $T \bigg(\begin{bmatrix}a&b\\c&d\end{bmatrix} \bigg) = a + b + c - d$. Find the pre-image $T^{-1}(3)$.
+
+### Solution
+
+A pre-image of an output in the codomain is a subset of all inputs in the domain which, when linearly transformed, generate the output. To find $T^{-1}(3)$, we need to find all $\begin{bmatrix}a&b\\c&d\end{bmatrix}$, such that $T \bigg(\begin{bmatrix}a&b\\c&d\end{bmatrix} \bigg) = 3$.
+
+$a + b + c - d = 3$
+
+$d = a + b + c - 3$
+
+If we plug in this expression for $d$, then 
+
+$T^{-1}(3) = \bigg\{\begin{bmatrix}a&b\\c&a+b+c-3\end{bmatrix} \bigg| a, b, c \in \mathbb{C} \bigg\}$
+
+All following examples belong to the subset of pre-image:
+
+$\begin{bmatrix}1&1\\1&0\end{bmatrix}, \begin{bmatrix}0&0\\0&-3\end{bmatrix}, \begin{bmatrix}1&2\\3&3\end{bmatrix}$

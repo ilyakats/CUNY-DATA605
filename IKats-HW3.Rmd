@@ -1,0 +1,195 @@
+---
+title: "DATA 605 Week 3 Homework"
+author: "Ilya Kats"
+date: "September 17, 2017"
+output:
+  pdf_document: default
+  html_document: default
+params:
+  password: ''
+  username: root
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Problem Set 1
+
+### Part (1)
+
+```{r}
+A <- matrix(c(1,2,3,4,-1,0,1,3,0,1,-2,1,5,4,-2,-3), nrow=4, byrow=TRUE)
+
+# Consider matrix A
+A
+
+# RREF of A
+library(pracma)
+rref(A)
+```
+
+There are 4 pivot rows, so the rank of $A$ is 4. Double-check with R.
+
+```{r}
+# Rank of A
+Rank(A)
+```
+
+### Part (2)
+
+Since rank of a matrix is defined as the number of linearly independent column vectors and is equal to the number of linearly independent row vectors, given an $m\times n$ matrix with $m>n$, the maximum rank is the lower value $rank_{max}=n$. Assuming a non-zero matrix, the rank should be at least 1, so $rank_{min}=1$.
+
+### Part (3)
+
+```{r}
+B <- matrix(c(1,2,1,3,6,3,2,4,2), nrow=3, byrow=TRUE)
+
+# Consider matrix B
+B
+
+# Rank of B
+Rank(B)
+```
+
+In addition to getting an answer in R, we can see that row 2 and row 3 are multiples of row 1, so rows 1 and 2 and 1 and 3 are linearly dependent. There is only 1 linearly independent row, so $rank(B)=1$.
+
+## Problem Set 2
+
+```{r}
+A <- matrix(c(1,2,3,0,4,5,0,0,6), nrow=3, byrow=TRUE)
+
+# Consider matrix A
+A
+```
+
+Since $A$ is a **triangular matrix**, its eigenvalues are values on the diagonal, so $\lambda_1=1$, $\lambda_2=4$ and $\lambda_3=6$.
+
+```{r}
+# Double-check eigenvalues in R
+eigen(A)$values
+```
+
+The **characteristic polynomial** is 
+$p_A(\lambda) = (1-\lambda)(4-\lambda)(6-\lambda)$ or
+$p_A(\lambda) = 24-34\lambda+11\lambda^2-\lambda^3$.
+
+If $\lambda=1$, then $A - 1I_3$ is row-reduced to 
+
+```{r}
+rref(A - 1 * diag(3))
+```
+
+$$
+ \begin{bmatrix}
+ 0 &1 &0\\
+ 0 &0 &1\\
+ 0&0&0
+ \end{bmatrix}
+ \begin{bmatrix}
+ v_1\\
+ v_2\\
+ v_3
+ \end{bmatrix}
+ =
+ \begin{bmatrix}
+ 0\\
+ 0\\
+ 0
+ \end{bmatrix}
+$$
+Then $v_1=v_1$ and $v_2=0$ and $v_3=0$. The **eigenspace** is  
+$$
+ E_{\lambda=1}=
+ \Bigg\langle \Bigg\{
+ \begin{bmatrix}
+ 1\\
+ 0\\
+ 0
+ \end{bmatrix}
+ \Bigg\} \Bigg \rangle
+$$
+
+If $\lambda=4$, then $A - 4I_3$ is row-reduced to 
+
+```{r}
+rref(A - 4 * diag(3))
+```
+
+$$
+ \begin{bmatrix}
+ 1 &-\frac{2}{3} &0\\
+ 0 &0 &1\\
+ 0&0&0
+ \end{bmatrix}
+ \begin{bmatrix}
+ v_1\\
+ v_2\\
+ v_3
+ \end{bmatrix}
+ =
+ \begin{bmatrix}
+ 0\\
+ 0\\
+ 0
+ \end{bmatrix}
+$$
+
+Then $v_1 - \frac{2}{3}v_2=0$ and $v_3=0$. 
+
+Or $v_1=v_1$ and $v_2=\frac{3}{2}v_1=1.5v_1$ and $v_3=0$. 
+
+The **eigenspace** is  
+
+$$
+ E_{\lambda=4}=
+ \Bigg\langle \Bigg\{
+ \begin{bmatrix}
+ 1\\
+ 1.5\\
+ 0
+ \end{bmatrix}
+ \Bigg\} \Bigg \rangle
+$$
+
+Finally, if $\lambda=6$, then $A - 6I_3$ is row-reduced to 
+
+```{r}
+rref(A - 6 * diag(3))
+```
+
+$$
+ \begin{bmatrix}
+ 1 &0 &-1.6\\
+ 0 &1 &-2.5\\
+ 0&0&0
+ \end{bmatrix}
+ \begin{bmatrix}
+ v_1\\
+ v_2\\
+ v_3
+ \end{bmatrix}
+ =
+ \begin{bmatrix}
+ 0\\
+ 0\\
+ 0
+ \end{bmatrix}
+$$
+
+Then $v_1-1.6v_3=0$ and $v_2-2.5v_3=0$. 
+
+Or $v_1=1.6v_3$ and $v_2=2.5v_3$ and $v_3=v_3$. 
+
+The **eigenspace** is  
+
+$$
+ E_{\lambda=6}=
+ \Bigg\langle \Bigg\{
+ \begin{bmatrix}
+ 1.6\\
+ 2.5\\
+ 1
+ \end{bmatrix}
+ \Bigg\} \Bigg \rangle
+$$
