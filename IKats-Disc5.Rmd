@@ -1,0 +1,84 @@
+---
+title: "DATA 605 Week 5 Discussion"
+author: "Ilya Kats"
+date: "September 27, 2017"
+params:
+  username: "root"
+  password: ""
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, error = TRUE)
+```
+
+## Section 2.2 Exercise 12
+
+Take a stick of unit length and break it into three pieces, choosing the break
+points at random. (The break points are assumed to be chosen simultaneously.)
+What is the probability that the three pieces can be used to form a
+triangle? *Hint:* The sum of the lengths of any two pieces must exceed the
+length of the third, so each piece must have length < 1/2.
+
+### Solution
+
+If any piece is longer than 1/2, then the triangle cannot be formed. Let $B$ and $C$ be two break points - $0<B<1$ and $0<C<1$. Let us assume that the first piece is longer than 1/2. Probability of that is $P(0.5<B<1) \times P(0.5<C<1) = 0.5 * 0.5 = 0.25$. Similarly, we can assume that the second piece is longer than 1/2 and then that the third piece is longer than 1/2. Probability of each is the same, so probability of one of three pieces being longer than 1/2 is $3 * 0.25 = 0.75$. Probability of none of the pieces being longer than 1/2 is $1-0.75 = 0.25$. 
+
+I have confirmed this with an R code. 
+
+```{r}
+# Initialize variables
+n <- 100000
+B <- runif(n)
+C <- runif(n)
+p <- rep(0,n)
+
+# Loop through all samples
+for (i in 1:n) {
+  if (B[i]>C[i]) {
+    t <- C[i]
+    C[i] <- B[i]
+    B[i] <- t
+  }
+  if ((B[i]<.5) & ((C[i]-B[i])<.5) & ((1-C[i])<.5)) {
+    p[i] <- 1
+  }
+}
+
+cat("Probability:",sum(p)/n)
+```
+
+## Section 2.2 Exercise 13
+
+Take a stick of unit length and break it into two pieces, choosing the break
+point at random. Now break the longer of the two pieces at a random point.
+What is the probability that the three pieces can be used to form a triangle?
+
+### Solution
+
+R simulation is below. 
+
+```{r}
+# Initialize variables
+n <- 100000
+B <- runif(n)
+p <- rep(0,n)
+
+# Loop through all samples
+for (i in 1:n) {
+  if (B[i]<0.5) {
+    C <- runif(1,B[i],1)
+    b <- B[i]
+  } else {
+    C <- B[i]
+    b <- runif(1,0,B[i])
+  }
+  if ((b<.5) & ((C-b)<.5) & ((1-C)<.5)) {
+    p[i] <- 1
+  }
+}
+
+cat("Probability:",sum(p)/n)
+```
