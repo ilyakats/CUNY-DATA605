@@ -1,0 +1,10 @@
+name: Publish Document
+title:
+username:
+account: rpubs
+server: rpubs.com
+hostUrl: rpubs.com
+appId: https://api.rpubs.com/api/v1/document/317501/6cfc90235b064849b766cfb20b4a8783
+bundleId: https://api.rpubs.com/api/v1/document/317501/6cfc90235b064849b766cfb20b4a8783
+url: http://rpubs.com/ilyakats/317501
+when: 1507766337.23675
