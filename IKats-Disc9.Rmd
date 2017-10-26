@@ -1,0 +1,38 @@
+---
+title: "DATA 605 Week 9 Discussion"
+author: "Ilya Kats"
+date: "October 26, 2017"
+params:
+  username: "root"
+  password: ""
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, error = TRUE)
+```
+
+## Chapter 9 Section 3 Exercise 9
+
+How large must $n$ be before $S_n = X_1+X_2+...+X_n$ is approximately normal?
+This number is often surprisingly small. Let us explore this question with a
+computer simulation. Choose $n$ numbers from $[0, 1]$ with probability density
+$f(x)$, where $n = 3$, $6$, $12$, $20$, and $f(x)$ is each of the densities in Exercise 7.
+Compute their sum $S_n$, repeat this experiment 1000 times, and make up a
+bar graph of 20 bars of the results. How large must $n$ be before you get a
+good fit?
+
+Probability density functions from Exercise 7:
+
+a. $f(x) = 1$
+b. $f(x) = 2x$
+c. $f(x) = 3x^2$
+d. $f(x) = 4|x-1/2|$
+e. $f(x) = 2-4|x-1/2|$
+
+### Solution
+
+```{r}
+
