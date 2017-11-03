@@ -1,0 +1,103 @@
+---
+title: "DATA 605 Week 10 Homework"
+author: "Ilya Kats"
+date: "November 3, 2017"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, error = TRUE)
+```
+
+### Chapter 11.2 Exercise 13
+
+Smith is in jail and has $1$ dollar; he can get out on bail if he has $8$ dollars.
+A guard agrees to make a series of bets with him. If Smith bets $A$ dollars,
+he wins A dollars with probability $.4$ and loses A dollars with probability $.6$.
+Find the probability that he wins $8$ dollars before losing all of his money if
+
+a. he bets $1$ dollar each time (timid strategy).
+b. he bets, each time, as much as possible but not more than necessary to
+bring his fortune up to $8$ dollars (bold strategy).
+c. Which strategy gives Smith the better chance of getting out of jail?
+
+#### ANSWERS
+
+a. $P_{timid} \approx 0.0203$
+b. $P_{bold} = 0.064$
+c. *Bold* strategy gives Smith significantly better chance of getting out of jail than the timid strategy. It is still a very small chance, so I wouldn't count on it.
+
+#### SOLUTION
+
+Using the bold strategy Smith needs to bet 3 times to reach $8 - to get from $1 to $2, from $2 to $4 and from $4 to $8. The probability of success for each bet is $0.4$, so the probability of 3 successes in a row is $P_{bold}=p^3 = 0.4^3 = 0.064$.
+
+For the timid strategy, I have decided to run a simulation first to see what kind of values to expect. 
+
+```{r}
+trials <- 10000
+out_of_jail <- 0
+for (i in 1:trials) {
+  bank <- 1
+  while (bank>0 & bank<8) {
+    bank<-bank+sample(c(-1,1),1,replace=TRUE,prob=c(0.6,0.4))
+  }
+  out_of_jail<-out_of_jail+(bank>=8)
+}
+paste0("Smith got out of jail ",out_of_jail,
+      " times in ",trials,
+      " simulations with probability of success ",out_of_jail/trials,".")
+```
+
+After simulating the strategy 10,000 times we can see that expected the probability of success is about 0.02. This will not be a better strategy than the bold one.
+
+In order to find the theoretical solution, I will use the transition matrix. It is presented below in canonical form. Each state is the amount of money Smith holds. States 0 and 8 are absorbing ones. Other states can increase by one with probability of 0.4 and decrease by one with probability of 0.6.
+
+```{r}
+# Transition matrix in canonical form
+P <- matrix(c(0,0.4,0,0,0,0,0,0.6,0,
+              0.6,0,0.4,0,0,0,0,0,0,
+              0,0.6,0,0.4,0,0,0,0,0,
+              0,0,0.6,0,0.4,0,0,0,0,
+              0,0,0,0.6,0,0.4,0,0,0,
+              0,0,0,0,0.6,0,0.4,0,0,
+              0,0,0,0,0,0.6,0,0,0.4,
+              0,0,0,0,0,0,0,1,0,
+              0,0,0,0,0,0,0,0,1), nrow=9, byrow=TRUE)
+rownames(P) <- c("1","2","3","4","5","6","7","0","8")
+colnames(P) <- c("1","2","3","4","5","6","7","0","8")
+P
+```
+
+Now let us find the fundametal matrix. 
+
+```{r}
+# Transient to Transient matrix
+Q <- P[1:7,1:7]
+# Transient to Absorbing matrix
+R <- P[1:7,8:9]
+
+# Fundamental matrix
+I <- diag(7)
+N <- solve(I-Q)
+N
+```
+
+Now let us find the matrix of absorbing probabilities.
+
+```{r}
+# Absorption probablities
+B <- N %*% R
+B
+```
+
+Per stated problem, Smith starts with $1 and needs to end up with $8. The probability of this happening is 
+
+```{r}
+B["1","8"]
+```
+
+Interestingly even starting with $6, the probability of getting out of jail is not on Smith's side.
+
+Neither strategy gives you particulary good chance of getting out of jail. However, bold strategy is noticeably better than timid strategy (1 in 15 chance vs. 1 in 50 chance). Timid strategy may feel like a "safe" one since losses are minimized during each bet, but in fact, being bold pays off here. 
