@@ -1,0 +1,78 @@
+---
+title: "DATA 605 Week 11 Discussion"
+author: "Ilya Kats"
+date: "November 10, 2017"
+params:
+  username: "root"
+  password: ""
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, error = TRUE)
+```
+
+## Linear Regression Model
+
+### First Attempt
+
+Originally, I wanted to get creative with my data. I decided to look at NYPD data for motor vehicle collisions (available at https://data.cityofnewyork.us/Public-Safety/NYPD-Motor-Vehicle-Collisions/h9gi-nx95). My first idea was to look at how number of collisions is affected by the weather. I took daily wind and precipitation numbers from NOAA website (https://www.ncdc.noaa.gov/cdo-web/search). I only looked at the last 3 years - November 2014 through November 2017.
+
+```{r warning=FALSE, message=FALSE}
+weather <- read.csv('C:\\Temp\\CUNY\\1123424_2.csv')
+accidents <- read.csv('C:\\Temp\\CUNY\\CollisionCount.csv')
+
+library(tidyr)
+library(dplyr)
+
+colnames(accidents) <- c('Record','Collisions')
+
+data <- weather %>% 
+  select(Record=DATE, Wind=AWND, Rain=PRCP) %>% 
+  inner_join(accidents, by=c('Record'))
+
+plot(data$Wind ~ data$Collisions, xlab='Number of Collisions', ylab='Wind Speed', 
+     main='Number of Collisions vs Wind Speed (Last 3 Years)')
+```
+
+**Absolutely no noticeable correlation.** Same for precipitation. This was disappointing. I think it is logical to assume that there are more collisions during bad weather. The problem is that collisions vary widely - from simple fender benders to serious accidents with loss of life. Bad weather may not significantly influence daily counts, but it may influence severity. 
+
+### Second Attempt
+
+Now is the time to go to R's built-in datasets. I picked `airquality` - a data set containing daily air quality measurements in New York recorded from May to September 1973. My model compares `Ozone` (mean ozone in parts per billion from 1300 to 1500 hours at Roosevelt Island) with `Temp` (maximum daily temperature in degrees Fahrenheit at La Guardia Airport).
+
+```{r}
+plot(airquality$Temp, airquality$Ozone, 
+     xlab='Max Daily Temperature at La Guardia Airport (F)',
+     ylab='Ozone Concentration at Roosevelt Island (ppb)',
+     main='Temperature vs Ozone (May 1 - Sept 30, 1973)')
+```
+
+After a simple plot, it looks like there is some correlation.
+
+```{r}
+# Simple linear regression model
+model <- lm(airquality$Ozone ~ airquality$Temp)
+summary(model)
+
+# Ozone/Temp plot with regression line
+plot(airquality$Ozone ~ airquality$Temp, 
+     xlab='Max Daily Temperature at La Guardia Airport (F)',
+     ylab='Mean Ozone at Roosevelt Island (ppb)',
+     main='Temperature vs Ozone (May 1 - Sept 30, 1973)')
+abline(model)
+
+# Residuals
+plot(model$residuals, ylab='Residuals')
+abline(a=0, b=0)
+
+# Q-Q plot
+qqnorm(model$residuals)
+qqline(model$residuals)
+```
+
+### Conclusion
+
+With R-squared value at about 0.48, the model describes almost 50% of variability. Looking at residuals plot, variability is constant with no pattern. Q-Q line looks good with the exception of both tails. Temperature is statistically significant variable to predict ozone concentration at all levels. Overall I think the model fits nicely. There are a few outliers and looking at the main plot, it appears that non-linear model may fit the data better.
