@@ -1,0 +1,140 @@
+---
+title: "DATA 605 Week 12 Discussion"
+author: "Ilya Kats"
+date: "November 18, 2017"
+params:
+  username: "root"
+  password: ""
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, error = TRUE)
+```
+
+## Multiple Regression Model
+
+### Data
+
+For this discussion, I figured some courses in Statistics will have sample data sets that will fit the requirements. I found an interesting one at the site for Princeton's course in Generalized Linear Models (http://data.princeton.edu/wws509/datasets/#salary).
+
+I am using salary data that include observations on six variables for 52 tenure-track professors in a small college. The variables are:
+
+- `sx`: Sex, coded 1 for female and 0 for male
+- `rk`: Rank, coded 1 for assistant professor, 2 for associate professor, and 3 for full professor
+- `yr`: Number of years in current rank
+- `dg`: Highest degree, coded 1 if doctorate, 0 if masters
+- `yd`: Number of years since highest degree was earned
+- `sl`: Academic year salary, in dollars.
+
+```{r}
+# Data import
+library(foreign)
+salary <- read.dta("http://data.princeton.edu/wws509/datasets/salary.dta")
+
+# Data size
+dim(salary)
+
+# General data description
+summary(salary)
+
+# Data sample
+knitr::kable(head(salary))
+```
+
+Convert *sex* and *rank* into numerical representation. 
+
+```{r}
+salary$sx <- as.character(salary$sx)
+salary$sx[salary$sx == "Male"] <- 0
+salary$sx[salary$sx == "Female"] <- 1
+salary$sx <- as.integer(salary$sx)
+
+salary$rk <- as.character(salary$rk)
+salary$rk[salary$rk == "Assistant"] <- 1
+salary$rk[salary$rk == "Associate"] <- 2
+salary$rk[salary$rk == "Full"] <- 3
+salary$rk <- as.integer(salary$rk)
+```
+
+### Linear Model
+
+I would like to build a model to predict professor's salary. All variables seem like they may be relevant.
+
+Sex (`sx`) will be my **dichotomous** variable. 
+
+It may make sense that increase in rank does not have a strictly linear relationship with the target variable. Higher rank may warrant higher salary increases, so my model will use square of rank (`rk`$^2$) as a **quadratic** variable.
+
+Finally, I wanted to see if the model is influenced by **interaction** between sex and number of years since highest degree was earned (`sx`$\times$`yd`).
+
+```{r}
+# Quadratic variable
+rk2 <- salary$rk^2
+
+# Dichotomous vs. quantative interaction
+sx_yd <- salary$sx * salary$yd
+
+# Initial model
+salary_lm <- lm(sl ~ sx + rk + rk2 + yr + dg + yd + sx_yd, data=salary)
+summary(salary_lm)
+```
+
+Perform **backwards elimination** - removing one variable (the one with highest p-value) at a time. Removing *sex*.
+
+```{r}
+# Version 2
+salary_lm <- update(salary_lm, .~. -sx)
+summary(salary_lm)
+```
+
+Removing *square of rank*.
+
+```{r}
+# Version 3
+salary_lm <- update(salary_lm, .~. -rk2)
+summary(salary_lm)
+```
+
+Removing *highest degree*.
+
+```{r}
+# Version 4
+salary_lm <- update(salary_lm, .~. -dg)
+summary(salary_lm)
+```
+
+Removing *interaction between sex and number of years since highest degree was earned*.
+
+```{r}
+# Version 5
+salary_lm <- update(salary_lm, .~. -sx_yd)
+summary(salary_lm)
+```
+
+Removing *number of years since highest degree was earned*.
+
+```{r}
+# Version 6
+salary_lm <- update(salary_lm, .~. -yd)
+summary(salary_lm)
+```
+
+The final model has two variables - *rank* and *number of years in current rank* - that can be used to predict the target variable.
+
+The median of residuals is a little off zero and they are a little uneven (the maximum value is noticeably farther away than the minimum value). Standard error for the `yr` variable could be smaller. 
+
+Two coefficients imply that for every increase in rank the salary increases by $4,731.26 and with every year in the current rank the salary increases by $376.50.
+
+Based on the Residuals vs. Fitted plot below there are some outliers in the data, but overall variability is fairly consistent. Based on the Q-Q plot, distribution of residuals is close to normal.
+
+Based on $R^2$ value, the model explains 84.36% of variability in the data. 
+
+```{r}
+plot(salary_lm$fitted.values, salary_lm$residuals, xlab="Fitted Values", ylab="Residuals", main="Residuals vs. Fitted")
+abline(h=0)
+
+qqnorm(salary_lm$residuals)
+qqline(salary_lm$residuals)
+```
