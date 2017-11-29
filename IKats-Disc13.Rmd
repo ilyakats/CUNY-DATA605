@@ -1,0 +1,69 @@
+---
+title: "DATA 605 Week 13 Discussion"
+author: "Ilya Kats"
+date: "November 22, 2017"
+params:
+  username: "root"
+  password: ""
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, error = TRUE)
+```
+
+## Chapter 7 Section 4 Exercise 5
+
+Find the arc length of the function on the given interval.
+
+$f(x) = \frac{1}{3}x^{\frac{3}{2}}-x^{\frac{1}{2}}$ on $[0,1]$
+
+### Define Function
+
+```{r}
+func <- function(x) 1/3 * x^(3/2) - x^(1/2)
+```
+
+### Plot
+
+```{r}
+x <- seq(0,1,0.01)
+plot(x,func(x), type="l",
+     xlab="x", ylab="f(x)", main="f(x) on [0,1]")
+```
+
+### Theoretical Solution
+
+$f'(x) = \frac{1}{3}\times \frac{3}{2}x^{\frac{1}{2}}-\frac{1}{2}x^{-\frac{1}{2}} = \frac{\sqrt{x}}{2} - \frac{1}{2\sqrt{x}} = \frac{x-1}{2\sqrt{x}}$
+
+$$
+\begin{split}
+L_{arc} &= \int_0^1 \sqrt{1+f'(x)^2} dx =\\
+&=  \int_0^1 \sqrt{1+\frac{(x-1)^2}{4x}} dx = \\
+&=  \int_0^1 \sqrt{\frac{4x+x^2-2x+1}{4x}} dx = \\
+&=  \int_0^1 \sqrt{\frac{x^2+2x+1}{4x}} dx = \\
+&=  \int_0^1 \sqrt{\frac{(x+1)^2}{4x}} dx = \\
+&=  \int_0^1 \frac{x+1}{2\sqrt{x}} dx = \\
+&= \frac{4}{3} \approx 1.333
+\end{split}
+$$
+I'll be honest here - I had to resort to [WolframAlpha](http://www.wolframalpha.com) to evaluate this integral (I guess I need to brush up on that).
+
+This does match the solution key at the end of the book (page A.13).
+
+### R Solution
+
+```{r}
+# Load pracma package
+library(pracma)
+
+# Convert function to parameterized function
+F <- function(x) c(x, func(x))
+
+# Find arc length
+arclength(F, a=0, b=1)
+```
+
+As you can see using the `pracma` package, you get an answer in 3 short lines of code.
