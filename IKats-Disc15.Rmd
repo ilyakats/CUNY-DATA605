@@ -1,0 +1,62 @@
+---
+title: "DATA 605 Week 15 Discussion"
+author: "Ilya Kats"
+date: "December 6, 2017"
+params:
+  username: "root"
+  password: ""
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+library(knitr)
+library(rgl)
+opts_chunk$set(echo = TRUE, error = TRUE)
+knit_hooks$set(webgl = hook_webgl)
+```
+
+## Chapter 12 Section 1 Exercise 17
+
+Describe in words and sketch the level curves for the given c values. 
+
+$$
+f(x,y) = x-y^2; c=-2, 0, 2
+$$
+
+### Solution
+
+Consider $c=0$. Then $f(x,y) = x-y^2 = c = 0$, so $y = \pm\sqrt{x}$.
+
+The horizontal plane at $c=0$ will intersect the surface following a parabola that is facing right. 
+
+With $c=-2$, $y=\pm\sqrt{x+2}$ and with $c=2$, $y=\pm\sqrt{x-2}$, so the intersection will have the same shape (parabola) just shifted by 2. 
+
+Let us plot the 3 level curves. 
+
+```{r}
+library(ggplot2)
+
+x <- seq(-5,20,0.05)
+y <- seq(-5, 5,0.05)
+xy <- data.frame(expand.grid(x=x, y=y))
+z <- xy$x-xy$y^2
+f <- data.frame(xy, z)
+ggplot(f, aes(x, y, z=z))+
+  geom_raster(aes(fill=z))+
+  geom_contour(breaks=c(-2,0,2), colour="white")+
+  xlab("x")+ylab("y")
+```
+
+Even with contour coloring, it is somewhat difficult to imagine the surface. Luckily, `rgl` makes it incredible easy. And you can use your mouse to adjust graph perspective. Embedding the graph into an RMarkdown file proved to be more difficult.
+
+```{r result, webgl=TRUE, results='hide'}
+myColorRamp <- function(colors, values) {
+    v <- (values - min(values))/diff(range(values))
+    x <- colorRamp(colors)(v)
+    rgb(x[,1], x[,2], x[,3], maxColorValue = 255)
+}
+cols <- myColorRamp(c("red", "blue"), f$y) 
+plot3d(f$x, f$y, f$z, xlab="x", ylab="y", zlab="", col = cols)
+```
