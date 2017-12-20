@@ -1,0 +1,104 @@
+---
+title: "Final Project"
+author: "Ilya Kats"
+date: "December 15, 2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+options("scipen" = 10)
+```
+
+```{r}
+library(MASS)
+```
+
+#### Data Import and Overview
+
+```{r}
+# Import training data
+train <- read.csv('C:\\Users\\ikats\\OneDrive\\Documents\\GitHub\\CUNY-DATA605\\Project\\train.csv')
+
+# Get general size of the data set
+dim(train)
+```
+
+Some variables, such as `LotArea`, should be correlated with sale price. One variable that caught my eye as less obvious one is `LotFrontage`, linear feet of street connected to property.
+
+```{r}
+summary(train$LotFrontage)
+```
+
+There are 259 NAs out of 1,460 observations - still a decent amount of data to consider. The numbers seem like this may work for analysis. Let us assign our $X$ variable, `LotFrontage`, and out $Y$ variable, `SalePrice`.
+
+```{r}
+X <- train$LotFrontage
+Y <- train$SalePrice
+```
+
+#### Descriptive and Inferential Statistics
+
+```{r}
+boxplot(X, main="Boxplot of Lot Frontage")
+hist(X, breaks=40, main="Histogram of Lot Frontage")
+```
+
+Looking at the `LotFrontage` boxplot and histogram, we can see that there are definitely outliers and dirtibution is right-skewed. 
+
+```{r}
+boxplot(Y, main="Boxplot of Sale Price")
+hist(Y, breaks=40, main="Histogram of Sale Price")
+```
+
+Distribution of `SalePrice` is close to the distribution of `LotFrontage`. It is also right-skewed with some number of outliers. 
+
+```{r}
+plot(X, Y, xlab="Lot Frontage", ylab="Sale Price", main="Scatterplot of Lot Frontage vs. Sale Price")
+```
+
+```{r}
+lm1 <- lm(Y ~ X)
+qqnorm(lm1$residuals); qqline(lm1$residuals)
+
+boxcox(lm1)
+```
+
+It looks like the optimal $\lambda$ value is close to 0. In fact 0 is included in the 95% confidence interval. Let us try the $log$ transformation. 
+
+```{r}
+lm2 <- lm(log(Y) ~ X)
+qqnorm(lm2$residuals); qqline(lm2$residuals)
+
+plot(X, log(Y), xlab="Lot Frontage", ylab="Log of Sale Price", main="Scatterplot of Lot Frontage vs. Sale Price: Log Transform")
+```
+
+```{r}
+bc <- boxcox(Y ~ X)
+(lambda <- bc$x[which.max(bc$y)])
+
+Ypower <- (Y^lambda-1)/lambda
+lm3 <- lm(Ypower ~ X)
+qqnorm(lm3$residuals); qqline(lm3$residuals)
+
+plot(X, Y^(-0.06), xlab="Lot Frontage", ylab="Sale Price (Lambda: -0.06)", main="Scatterplot of Lot Frontage vs. Sale Price: Power Transform")
+```
+
+```{r}
+cordata <- train[, c("TotalBsmtSF", "MoSold", "OverallCond", "SalePrice")]
+cormatrix <- cor(cordata)
+round(cormatrix,2)
+
+precmatrix <- solve(cormatrix)
+round(precmatrix,2)
+round(diag(precmatrix),2)
+
+round(cormatrix %*% precmatrix,4)
+round(precmatrix %*% cormatrix,4) == round(cormatrix %*% precmatrix,4)
+```
+
+
+#### References
+
+https://stackoverflow.com/questions/33999512/how-to-use-the-box-cox-power-transformation-in-r
+https://www.r-bloggers.com/create-a-correlation-matrix-in-r/
