@@ -1,8 +1,12 @@
 ---
-title: "Final Project"
+title: "DATA 605 Final Project"
 author: "Ilya Kats"
-date: "December 15, 2017"
-output: html_document
+date: "December 20, 2017"
+output: 
+  html_document:
+    toc: true
+    toc_depth: 4
+    toc_float: true
 ---
 
 ```{r setup, include=FALSE}
@@ -11,42 +15,129 @@ options("scipen" = 10)
 ```
 
 ```{r}
+# Required libraries
 library(MASS)
+library(psych)
 ```
 
-#### Data Import and Overview
+This project is based on data from the _House Prices_ competition on Kaggle (https://www.kaggle.com/c/house-prices-advanced-regression-techniques). Full data description is available [here](https://raw.githubusercontent.com/ilyakats/CUNY-DATA605/master/Project/data_description.txt).
+
+### Data Import and Overview
 
 ```{r}
 # Import training data
-train <- read.csv('C:\\Users\\ikats\\OneDrive\\Documents\\GitHub\\CUNY-DATA605\\Project\\train.csv')
+train <- read.csv('https://raw.githubusercontent.com/ilyakats/CUNY-DATA605/master/Project/train.csv')
 
 # Get general size of the data set
 dim(train)
 ```
 
-Some variables, such as `LotArea`, should be correlated with sale price. One variable that caught my eye as less obvious one is `LotFrontage`, linear feet of street connected to property.
+Some variables, such as `LotArea`, should be correlated with the sale price. One variable that caught my eye as less obvious one is `LotFrontage`, linear feet of street connected to property.
 
 ```{r}
 summary(train$LotFrontage)
 ```
 
-There are 259 NAs out of 1,460 observations - still a decent amount of data to consider. The numbers seem like this may work for analysis. Let us assign our $X$ variable, `LotFrontage`, and out $Y$ variable, `SalePrice`.
+There are 259 NAs out of 1,460 observations - still a decent amount of data to consider. The numbers seem like this may work for analysis. Let us assign our $X$ variable, `LotFrontage`, and our $Y$ variable, `SalePrice`.
 
 ```{r}
 X <- train$LotFrontage
 Y <- train$SalePrice
 ```
 
-#### Descriptive and Inferential Statistics
+### Probability
+
+My chosen variable, `LotFrontage`, has some NA values. For this section, I have decided to remove all observations with NA.
 
 ```{r}
+probdata <- train[, c("LotFrontage", "SalePrice")]
+probdata <- probdata[!is.na(probdata$LotFrontage),]
+
+summary(probdata$LotFrontage)
+summary(probdata$SalePrice)
+```
+
+```{r}
+# First quartile of X variable
+x <- quantile(probdata$LotFrontage)[2]
+# Second quartile / median of Y variable
+y <- median(probdata$SalePrice)
+```
+
+```{r}
+t <- c(nrow(probdata[probdata$LotFrontage<x & probdata$SalePrice<y,]),
+       nrow(probdata[probdata$LotFrontage<x & probdata$SalePrice==y,]),
+       nrow(probdata[probdata$LotFrontage<x & probdata$SalePrice>y,]))
+t <- rbind(t,c(nrow(probdata[probdata$LotFrontage==x & probdata$SalePrice<y,]),
+               nrow(probdata[probdata$LotFrontage==x & probdata$SalePrice==y,]),
+               nrow(probdata[probdata$LotFrontage==x & probdata$SalePrice>y,])))
+t <- rbind(t,c(nrow(probdata[probdata$LotFrontage>x & probdata$SalePrice<y,]),
+               nrow(probdata[probdata$LotFrontage>x & probdata$SalePrice==y,]),
+               nrow(probdata[probdata$LotFrontage>x & probdata$SalePrice>y,])))
+t <- cbind(t, t[,1] + t[,2] + t[,3])
+t <- rbind(t, t[1,] + t[2,] + t[3,])
+colnames(t) <- c("Y<y", "Y=y", "Y>y", "Total")
+rownames(t) <- c("X<x", "X=x", "X>x", "Total")
+knitr::kable(t)
+```
+
+a. $P(X>x | Y>y)=\frac{489}{598} \approx 0.8177$
+b. $P(X>x\ and\ Y>y) = \frac{489}{1201} \approx 0.4072$
+c. $P(X<x | Y>y)=\frac{101}{598} \approx 0.1689$
+
+Additional probabilities can be calculated using the following probabilities table.
+
+```{r}
+knitr::kable(round(t/1201,4))
+```
+
+Consider probability (a) above: $P(X>x | Y>y)=0.8177$. $P(X>x)=0.7469$. 
+
+Since $P(X>x | Y>y) \ne P(X>x)$, these events are **not independent**. 
+
+#### Chi-squared Test
+
+Let us the chi-squared test to evaluate the null hypothesis that $X>x$ (lot frontage is greater than first quartile or 59) and $Y>y$ (sale price is greater than median or 159,500) are independent events. Because we have very few events such that $X=x$ or $Y=y$, we will combine those values and only use two categories - $\le$ and $>$.
+
+```{r}
+chisq.test(table(probdata$LotFrontage>x, probdata$SalePrice>y))
+```
+
+The p-value is nearly zero. Therefore, we reject the null hypothesis. Two events are not independent.
+
+### Descriptive and Inferential Statistics
+
+Let us get some basic statistics about the `LotFrontage` variable.
+
+```{r}
+summary(X)
+describe(X)
+```
+
+There are 1,201 valid observations between a very small/narrow lot of 21 feet and large lot of 313 feet. Average frontage is 70.05 feet.
+
+
+Let us get some basic statistics about the `SalePrice` variable.
+
+```{r}
+summary(Y)
+describe(Y)
+```
+
+Sale price is availavble for all 1,460 observations. It ranges from just shy of \$35,000 to just over \$750,000. Average sale price is $180,900. 
+
+Let us evaluate a few plots. 
+
+```{r}
+par(mfrow=c(1,2))
 boxplot(X, main="Boxplot of Lot Frontage")
 hist(X, breaks=40, main="Histogram of Lot Frontage")
 ```
 
-Looking at the `LotFrontage` boxplot and histogram, we can see that there are definitely outliers and dirtibution is right-skewed. 
+Looking at the `LotFrontage` boxplot and histogram, we can see that there are definitely outliers and distibution is right-skewed. 
 
 ```{r}
+par(mfrow=c(1,2))
 boxplot(Y, main="Boxplot of Sale Price")
 hist(Y, breaks=40, main="Histogram of Sale Price")
 ```
@@ -54,51 +145,131 @@ hist(Y, breaks=40, main="Histogram of Sale Price")
 Distribution of `SalePrice` is close to the distribution of `LotFrontage`. It is also right-skewed with some number of outliers. 
 
 ```{r}
-plot(X, Y, xlab="Lot Frontage", ylab="Sale Price", main="Scatterplot of Lot Frontage vs. Sale Price")
+plot(X, Y, xlab="Lot Frontage", ylab="Sale Price", 
+     main="Scatterplot of Lot Frontage vs. Sale Price")
 ```
+
+Looking at the scatter plot, there is no obvious correlation, but it is a bit hard to say definitely. Let us build and evaluate a linear regression model. 
 
 ```{r}
 lm1 <- lm(Y ~ X)
-qqnorm(lm1$residuals); qqline(lm1$residuals)
+summary(lm1)
+```
 
-boxcox(lm1)
+Looking at the summary, we see that `LotFrontage` may carry some significance, but at the same time $R^2$ is very small and the model covers only about 12% of variability. More importantly looking at the analysis of residuals below it is clear that variability of residuals is not constant and distribution deviates from normal distribution. Because of these issues it would not be appropriate to use this model for analysis.
+
+```{r}
+plot(lm1$fitted.values, lm1$residuals, 
+     xlab="Fitted Values", ylab="Residuals")
+abline(h=0)
+qqnorm(lm1$residuals); qqline(lm1$residuals)
+```
+
+#### Box Cox Transformation
+
+Let us perform the Box Cox transformation to see if this model can be improved.
+
+```{r}
+bc <- boxcox(lm1)
+(lambda <- bc$x[which.max(bc$y)])
 ```
 
 It looks like the optimal $\lambda$ value is close to 0. In fact 0 is included in the 95% confidence interval. Let us try the $log$ transformation. 
 
 ```{r}
 lm2 <- lm(log(Y) ~ X)
+summary(lm2)
+plot(lm2$fitted.values, lm2$residuals, 
+     xlab="Fitted Values", ylab="Residuals")
+abline(h=0)
 qqnorm(lm2$residuals); qqline(lm2$residuals)
 
-plot(X, log(Y), xlab="Lot Frontage", ylab="Log of Sale Price", main="Scatterplot of Lot Frontage vs. Sale Price: Log Transform")
+plot(X, log(Y), xlab="Lot Frontage", ylab="Log of Sale Price", 
+     main="Scatterplot of Lot Frontage vs. Sale Price: Log Transform")
 ```
 
-```{r}
-bc <- boxcox(Y ~ X)
-(lambda <- bc$x[which.max(bc$y)])
+After _log_ transformaion of `SalePrice`, distribution of residuals is significantly closer to normal and there is noticeable improvement in variability. $R^2$ of the new model has not increased, but with Box Cox transformation the new model adheres closer to necessary assumptions. It is stil probably not enough, but there is improvement.
 
-Ypower <- (Y^lambda-1)/lambda
-lm3 <- lm(Ypower ~ X)
-qqnorm(lm3$residuals); qqline(lm3$residuals)
+### Linear Algebra and Correlation
 
-plot(X, Y^(-0.06), xlab="Lot Frontage", ylab="Sale Price (Lambda: -0.06)", main="Scatterplot of Lot Frontage vs. Sale Price: Power Transform")
-```
+Let us select the following 4 variables from the data and build a correlation matrix:
+
+- `TotalBsmtSF`: Total square feet of basement area
+- `MoSold`: Month sold
+- `OverallCond`: Rates the overall condition of the house (from _1-Very Poor_ to _10-Very Excellent_)
+- `SalePrice`: Sale price
 
 ```{r}
 cordata <- train[, c("TotalBsmtSF", "MoSold", "OverallCond", "SalePrice")]
 cormatrix <- cor(cordata)
 round(cormatrix,2)
+```
 
+Before analysis I suspected that month the house was sold in correlates to the sale price since sale decisions may be driven by school schedule and weather. This turned out to be not the case. Less surprisingly basement size does seem to correlate with the sale price (larger basement suggests larger house and higher sale price).
+
+Let us invert the correlation matrix to get the precision matrix. 
+
+```{r}
 precmatrix <- solve(cormatrix)
 round(precmatrix,2)
 round(diag(precmatrix),2)
+```
 
+Variance inflation factors from the diagonal of the precision matrix indicate that `MoSold` and `OverallCond` are not correlated among 4 variables chosen for this analysis while `TotalBsmtSF` and `SalePrice` may have moderate correlation. 
+
+Since $[Precision] = [Correlation]^{-1}$, then $[Precision]\times[Correlation]$ should be equal to **identity** matrix. Let us confirm.
+
+```{r}
 round(cormatrix %*% precmatrix,4)
 round(precmatrix %*% cormatrix,4) == round(cormatrix %*% precmatrix,4)
 ```
 
+### Calculus-Based Probability and Statistics
 
-#### References
+Let us compare the actual distribution of `LotFrontage` against gamma distribution using the `fitdistr` method of the `MASS` library.
 
-https://stackoverflow.com/questions/33999512/how-to-use-the-box-cox-power-transformation-in-r
-https://www.r-bloggers.com/create-a-correlation-matrix-in-r/
+```{r}
+# Remove NAs
+X <- X[!is.na(X)]
+
+# Fitting of univariate distribution
+(fd <- fitdistr(X, "gamma"))
+
+# Actual vs simulated distribution
+hist(X, breaks=40, prob=TRUE, xlab="Lot Frontage",
+     main="Lot Frontage Distribution")
+curve(dgamma(x, shape = fd$estimate['shape'], rate = fd$estimate['rate']), 
+      col="blue", add=TRUE)
+```
+
+Looks like a very good fit. I picked the gamma distribution because the histogram of `LotFrontage` above seemed to resemble it. Now I am curious if perhaps another distribution would be a better fit based on `fitdistr`.
+
+```{r warning=FALSE}
+distributions <- c("cauchy", "exponential", "gamma", "geometric", "log-normal", "lognormal", 
+                   "logistic", "negative binomial", "normal", "Poisson", "t", "weibull")
+logliks <- c()
+for (d in distributions) {
+  logliks <- c(logliks, fitdistr(X, d)$loglik)
+}
+
+logtable <- as.data.frame(cbind(distributions, logliks))
+knitr::kable(logtable[order(logtable$logliks),], 
+             row.names=FALSE, col.names=c("Distribution", "Log-Likelihood"))
+```
+
+Based on log-loglikelihood values, it seems that the t distribution would be a better fit. 
+
+```{r warning=FALSE}
+(fd <- fitdistr(X, "t"))
+
+# Actual vs simulated distribution
+hist(X, breaks=50, prob=TRUE, xlab="Lot Frontage",
+     main="Lot Frontage Distribution")
+curve(dt(x, df = fd$estimate['df'], ncp=fd$estimate['m']), 
+      col="blue", add=TRUE)
+```
+
+The graph is a bit inconclusive. I feel that I am missing something here in properly interpreting the t distribution, but I have decided to include the work anyway. 
+
+### Modeling
+
