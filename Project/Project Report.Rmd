@@ -2,11 +2,14 @@
 title: "DATA 605 Final Project"
 author: "Ilya Kats"
 date: "December 20, 2017"
-output: 
+output:
   html_document:
-    toc: true
+    toc: yes
     toc_depth: 4
-    toc_float: true
+    toc_float: yes
+  pdf_document:
+    toc: yes
+    toc_depth: '4'
 ---
 
 ```{r setup, include=FALSE}
@@ -273,3 +276,148 @@ The graph is a bit inconclusive. I feel that I am missing something here in prop
 
 ### Modeling
 
+#### Modeling Summary
+
+The following are key steps taken in building the model:
+
+1. Data was reviewed and number of variables were eliminated because they contained a lot of missing data or there was not enough variability in the data. 
+2. Several variables were eliminated because they contained either repetetive data (represented by other variables) or data that is more likely to confuse the model rather than improve it. 
+3. Categorical variables were converted to numerica values. 
+4. Target variable, `SalePrice`, was log-transformed to bring it to the scale of other variables. 
+5. Training and testing data sets were combined for data clean-up, but then separated for modeling.
+
+Final model formula is as follows:
+
+> formula = SalePrice ~ MSZoning + LotFrontage + LotArea + BldgType + 
+    OverallQual + OverallCond + YearBuilt + RoofMatl + Exterior1st + 
+    Exterior2nd + ExterCond + BsmtCond + BsmtFinType1 + BsmtFinSF1 + 
+    HeatingQC + CentralAir + X1stFlrSF + GrLivArea + FullBath + 
+    KitchenQual + Functional + GarageFinish + GarageArea + GarageCond + 
+    PavedDrive + WoodDeckSF + SaleCondition
+
+Kaggle username is **IlyaKats**. Final score is **0.13513**. Submission data is available at https://github.com/ilyakats/CUNY-DATA605/tree/master/Project. 
+
+#### Modeling Work
+
+```{r}
+# Read test data and add SalePrice column
+test <- read.csv('https://raw.githubusercontent.com/ilyakats/CUNY-DATA605/master/Project/test.csv')
+test <- cbind(test, SalePrice=rep(0,nrow(test)))
+
+# Get training data and review summary statistics
+md <- train
+summary(md)
+
+# Combine with testing data to do global replacements
+md <- rbind(md, test)
+
+# Eliminate features with limited or missing data
+md <- subset(md, select=-c(Street, Alley, LandContour, Utilities, 
+                           LandSlope, Condition2, MasVnrArea, Heating, 
+                           BsmtFinSF2, X2ndFlrSF, LowQualFinSF, BsmtFullBath, 
+                           BsmtHalfBath, HalfBath, PoolQC, PoolArea, MiscVal, 
+                           MiscFeature, Fence, ScreenPorch, Fireplaces,
+                           EnclosedPorch, MoSold, YrSold))
+```
+
+Based on summary statistics above the following fields were eliminated from modeling because of a lot of missing data - `Street`, `Alley`, `LandContour`, `Utilities`, `LandSlope`, `Condition2`, `MasVnrArea`, `Heating`, `BsmtFinSF2`, `X2ndFlrSF`, `LowQualFinSF`, `BsmtFullBath`, `BsmtHalfBath`, `HalfBath`, `PoolQC`, `PoolArea`, `MiscVal`, `MiscFeature`, `Fence`, `ScreenPorch`, `Fireplaces`, `EnclosedPorch`.  Additionally, `Id` was eliminated because it carries no relevant information. We have established above that `MoSold` does not correlate with sale price, so it was eliminated. Finally, `YrSold` was eliminated. Although, year may play a factor, data covers 2006 through 2010 - a relatively short period that is unlikely to contain significant patterns. 
+
+We are left with the following columns.
+
+```{r}
+colnames(md)
+```
+
+```{r}
+md <- subset(md, select=-c(LotShape, YearRemodAdd, BsmtExposure, 
+                           BsmtFinType2, TotalBsmtSF, TotRmsAbvGrd, 
+                           FireplaceQu, GarageYrBlt, GarageCars))
+```
+
+After reviewing data dictionary, the following fields were eliminated - `LotShape`, `YearRemodAdd` (contains construction year if no remodeling was done which may negatively interfere with the model), `BsmtExposure`, `BsmtFinType2`, `TotalBsmtSF` (included in other variables), `TotRmsAbvGrd`, `FireplaceQu`, `GarageYrBlt`, `GarageCars`.
+
+Categorical variables were converted to numerical values. Remaining NAs were replaced with zeros.
+
+```{r}
+md$Neighborhood <- as.integer(factor(md$Neighborhood))
+md$MSZoning <- as.integer(factor(md$MSZoning))
+md$LotConfig <- as.integer(factor(md$LotConfig))
+md$Condition1 <- as.integer(factor(md$Condition1))
+md$BldgType <- as.integer(factor(md$BldgType))
+md$HouseStyle <- as.integer(factor(md$HouseStyle))
+md$RoofStyle <- as.integer(factor(md$RoofStyle))
+md$RoofMatl <- as.integer(factor(md$RoofMatl))
+md$Exterior1st <- as.integer(factor(md$Exterior1st))
+md$Exterior2nd <- as.integer(factor(md$Exterior2nd))
+md$MasVnrType <- as.integer(factor(md$MasVnrType))
+md$ExterQual <- as.integer(factor(md$ExterQual))
+md$ExterCond <- as.integer(factor(md$ExterCond))
+md$BsmtQual <- as.integer(factor(md$BsmtQual))
+md$BsmtCond <- as.integer(factor(md$BsmtCond))
+md$Electrical <- as.integer(factor(md$Electrical))
+md$KitchenQual <- as.integer(factor(md$KitchenQual))
+md$Functional <- as.integer(factor(md$Functional))
+md$GarageType <- as.integer(factor(md$GarageType))
+md$GarageFinish <- as.integer(factor(md$GarageFinish))
+md$GarageCond <- as.integer(factor(md$GarageCond))
+md$BsmtFinType1 <- as.integer(factor(md$BsmtFinType1))
+md$PavedDrive <- as.integer(factor(md$PavedDrive))
+md$SaleType <- as.integer(factor(md$SaleType))
+md$SaleCondition <- as.integer(factor(md$SaleCondition))
+md$Foundation <- as.integer(factor(md$Foundation))
+md$HeatingQC <- as.integer(factor(md$HeatingQC))
+md$GarageQual <- as.integer(factor(md$GarageQual))
+
+md[is.na(md)] <- 0
+```
+
+Separate data into training and testing sets. Log-transform sales price in the training set.
+
+```{r}
+test <- md[md$SalePrice==0,]
+md <- md[md$SalePrice>0,]
+
+md$SalePrice <- log(md$SalePrice)
+
+# Remove ID column from training data
+md <- subset(md, select=-c(Id))
+
+# Build initial model with all fields
+sale_lm <- lm(SalePrice ~ . , data=md)
+summary(sale_lm)
+```
+
+Optimize the model using `stepAIC` method.
+
+```{r}
+step_lm <- stepAIC(sale_lm, trace=FALSE)
+summary(step_lm)
+```
+
+$R^2$ is over 0.86 which seems like a good fit. Check residuals.
+
+```{r}
+plot(step_lm$fitted.values, step_lm$residuals, 
+     xlab="Fitted Values", ylab="Residuals", main="Fitted Values vs. Residuals")
+abline(h=0)
+
+qqnorm(step_lm$residuals); qqline(step_lm$residuals)
+```
+
+Residuals definitely point to a few outliers. The model can probably be improved if outliers are removed from the data. Residuals are approximately normally distributed. 
+
+```{r}
+# Predict prices for test data
+pred_saleprice <- predict(step_lm, test)
+# Convert from log back to real world number
+pred_saleprice <- sapply(pred_saleprice, exp)
+# Prepare data frame for submission
+kaggle <- data.frame(Id=test$Id, SalePrice=pred_saleprice)
+write.csv(kaggle, file = "submission.csv", row.names=FALSE)
+```
+
+#### Kaggle Submission
+
+Kaggle username is **IlyaKats**. Final score is **0.13513**.
+
+![](https://raw.githubusercontent.com/ilyakats/CUNY-DATA605/master/Project/submission.png)
